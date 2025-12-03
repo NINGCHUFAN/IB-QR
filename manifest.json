@@ -1,8 +1,9 @@
 {
-  "name": "IBーQRコード生成器",
+  "name": "IBーQRコード生成器 v5",
   "short_name": "IB-QR",
-  "display": "fullscreen",
   "start_url": "index.html",
+  "scope": "./",
+  "display": "fullscreen",
   "theme_color": "#2b7cff",
   "background_color": "#ffffff",
   "icons": [
