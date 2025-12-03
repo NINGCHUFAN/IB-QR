@@ -3,29 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IB-QRko-do v5</title>
+<title>IB-QRko-do v6</title>
 
+<!-- iPhone UI 样式 -->
 <style>
-body { font-family: Arial; margin: 0; padding: 20px; background: #fff; color: #000; }
-h2 { text-align: center; margin-bottom: 20px; }
-.container { max-width: 900px; margin: auto; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.item label { font-size: 14px; display:block; }
-.item input { width: 100%; padding: 10px; border:1px solid #888; border-radius: 8px; font-size:16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+  margin: 0;
+  background: #f2f2f7;
+  padding-bottom: 120px; /* 给底部按钮留空间 */
+}
 
-button { width:100%; padding:14px 0; margin-top:10px; border-radius:10px; border:none;
-         font-size:18px; font-weight:bold; color:#fff; }
-.btn-main { background:#2b7cff; }
-.btn-second { background:#555; }
-.btn-danger { background:#c62828; }
+/* 标题 */
+h2 {
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+  color: #111;
+  font-size: 22px;
+}
 
-#qrcode { text-align:center; margin-top:20px; }
-canvas { display:none; }
+/* 分组卡片 */
+.section {
+  background: #fff;
+  margin: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
 
+/* 分组标题 */
+.section-title {
+  font-size: 17px;
+  margin-bottom: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* 输入网格（双列） */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+/* 输入组 */
+.item label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+.item input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 15px;
+  outline: none;
+}
+.item input:focus {
+  border: 1px solid #0a84ff;
+  background: #fff;
+}
+
+/* QR 名称栏 */
+#qrTitle {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d1d6;
+  border-radius: 12px;
+  font-size: 16px;
+  background: #fafafa;
+}
+#qrTitle:focus {
+  border-color: #0a84ff;
+  background: #fff;
+}
+
+/* 底部按钮栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+  padding: 12px 18px 20px;
+  display: flex;
+  gap: 12px;
+}
+
+/* 主按钮（QR 生成） */
+.btn-main {
+  flex: 1;
+  padding: 14px 0;
+  background: #0a84ff;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+}
+
+/* 辅助按钮（QR 解析） */
+.btn-second {
+  flex: 1;
+  padding: 14px 0;
+  background: #555;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+}
+
+/* 清空按钮（放在生成卡片下） */
+.btn-danger {
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 16px;
+  background: #c62828;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 16px;
+  border: none;
+}
+
+/* QR 显示卡片 */
+.qr-card {
+  background: #fff;
+  margin: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+#qr-name {
+  font-size: 17px;
+  margin-bottom: 12px;
+  color: #222;
+}
+
+/* 更新提示 */
 #updateToast {
-  position: fixed; left:50%; bottom:30px; transform:translateX(-50%);
-  background:#333; color:#fff; padding:12px 20px; border-radius:8px;
-  font-size:16px; display:none; z-index:9999;
+  position: fixed;
+  left:50%; bottom:30px;
+  transform:translateX(-50%);
+  background:#333; color:#fff;
+  padding:12px 20px;
+  border-radius:10px;
+  font-size:16px;
+  display:none;
+  z-index:9999;
 }
 </style>
 
@@ -34,51 +164,77 @@ canvas { display:none; }
 
 <link rel="manifest" href="manifest.json">
 
+<!-- Service Worker 自动更新 -->
 <script>
-// =========================
-// Service Worker 自动更新
-// =========================
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
+  navigator.serviceWorker.register("service-worker.js")
     .then(reg => {
-        reg.onupdatefound = () => {
-            const newSW = reg.installing;
-            newSW.onstatechange = () => {
-                if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-                    showUpdateToast();
-                }
-            };
+      reg.onupdatefound = () => {
+        const newSW = reg.installing;
+        newSW.onstatechange = () => {
+          if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateToast();
+          }
         };
+      };
     });
 }
 
 function showUpdateToast(){
-    const t=document.getElementById("updateToast");
-    t.style.display="block";
-    setTimeout(()=>location.reload(),1500);
+  const t=document.getElementById("updateToast");
+  t.style.display="block";
+  setTimeout(()=>location.reload(),1500);
 }
 </script>
 
 </head>
-
 <body>
-<h2>IB-QRko-do v5（オフライン・自動更新）</h2>
 
+<h2>IB-QRko-do v6（iOS UI）</h2>
 <div id="updateToast">新しいバージョンを読み込み中…</div>
 
-<div class="container">
-
-<div class="item">
-<label>QR 名称（黒地白文字）</label>
-<input id="qrTitle" placeholder="例：定型0300（2A補正値）">
+<!-- QR 名称 -->
+<div class="section">
+  <label class="section-title">QR 名称</label>
+  <input id="qrTitle" placeholder="例：定型0300（2A補正値）">
 </div>
 
-<div id="inputs" class="grid"></div>
+<!-- 基本情報 -->
+<div class="section">
+  <div class="section-title">基本情報</div>
+  <div id="sec-basic" class="grid"></div>
+</div>
+
+<!-- 寸法設定 -->
+<div class="section">
+  <div class="section-title">寸法設定（L1～L16・W1～W9）</div>
+  <div id="sec-dim" class="grid"></div>
+</div>
+
+<!-- Offset 设置 -->
+<div class="section">
+  <div class="section-title">Offset 設定</div>
+  <div id="sec-offset" class="grid"></div>
+</div>
+
+<!-- QR 预览 -->
+<div class="qr-card">
+  <h3 id="qr-name"></h3>
+  <img id="qr-image" style="width:260px;">
+  <input type="file" id="qrFile" accept="image/*" style="margin-top:14px;">
+  <button class="btn-danger" onclick="localStorage.clear();location.reload();">全てリセット</button>
+</div>
+
+<!-- 底部按钮 -->
+<div class="bottom-bar">
+  <button class="btn-second" onclick="decodeQR()">QR 解析</button>
+  <button class="btn-main" onclick="generateQR()">QR 生成</button>
+</div>
 
 <script>
-// =========================
-// 80 个项目字段名称（依然保持你的顺序）
-// =========================
+// ===============================
+// 字段名称（与你当前版本完全一致）
+// ===============================
 const labels = [
 "1. 定型番号","2. 生産数量","3. シート長さ","4. シート幅","5. シート厚み",
 "6. 長さL","7. 幅B","8. 高さH","9. 糊代","10. 複数(丁付)",
@@ -99,117 +255,98 @@ const labels = [
 "77. iOffsetW6","78. iOffsetW7","79. iOffsetW8","80. iOffsetW9"
 ];
 
-// ------------------------------
-// 初始化输入框
-// ------------------------------
-const container = document.getElementById("inputs");
-labels.forEach((label, index) => {
-    const item = document.createElement("div");
-    item.className = "item";
-    const id = "f" + (index + 1);
-    item.innerHTML = `<label>${label}</label>
-                      <input id="${id}" type="text">`;
-    container.appendChild(item);
+// 三大分组
+const basic_end = 27;
+const dim_end = 27 + 25;
+
+const basicBox = document.getElementById("sec-basic");
+const dimBox = document.getElementById("sec-dim");
+const offsetBox = document.getElementById("sec-offset");
+
+// 创建输入框
+labels.forEach((label, i) => {
+  const id = "f"+(i+1);
+  const el = document.createElement("div");
+  el.className = "item";
+  el.innerHTML = `<label>${label}</label><input id="${id}" type="text">`;
+
+  if(i < basic_end) basicBox.appendChild(el);
+  else if(i < dim_end) dimBox.appendChild(el);
+  else offsetBox.appendChild(el);
 });
 
-// ------------------------------
-// 自动保存 & 自动恢复
-// ------------------------------
+// 自动保存
 function saveAll(){
-    labels.forEach((_,i)=>{
-        const id = "f"+(i+1);
-        localStorage.setItem(id, document.getElementById(id).value);
-    });
-    localStorage.setItem("qrTitle", document.getElementById("qrTitle").value);
+  labels.forEach((_,i)=>{
+    const id="f"+(i+1);
+    localStorage.setItem(id, document.getElementById(id).value);
+  });
+  localStorage.setItem("qrTitle", document.getElementById("qrTitle").value);
 }
-
 document.querySelectorAll("input").forEach(inp=>{
-    inp.addEventListener("input", saveAll);
+  inp.addEventListener("input", saveAll);
 });
 
+// 自动恢复
 function restore(){
-    labels.forEach((_,i)=>{
-        const id = "f"+(i+1);
-        const v = localStorage.getItem(id);
-        if(v!==null) document.getElementById(id).value = v;
-    });
-    const t = localStorage.getItem("qrTitle");
-    if(t!==null) document.getElementById("qrTitle").value = t;
+  labels.forEach((_,i)=>{
+    const id="f"+(i+1);
+    const v=localStorage.getItem(id);
+    if(v!==null) document.getElementById(id).value=v;
+  });
+  const t=localStorage.getItem("qrTitle");
+  if(t!==null) document.getElementById("qrTitle").value=t;
 }
 restore();
 
-// ------------------------------
-// 生成 QR
-// ------------------------------
+// 生成QR
 function generateQR(){
-    let data = [];
-    labels.forEach((_,i)=>{
-        const id="f"+(i+1);
-        let v = document.getElementById(id).value.trim();
-        if(v==="") v="0";
-        data.push(v);
-    });
+  let data=[];
+  labels.forEach((_,i)=>{
+    const id="f"+(i+1);
+    let v=document.getElementById(id).value.trim();
+    if(v==="") v="0";
+    data.push(v);
+  });
 
-    const finalStr = data.join(";");
+  let qr = new QRious({
+    value: data.join(";"),
+    size: 400,
+    level: "H"
+  });
 
-    let qr = new QRious({
-        value: finalStr,
-        size: 400,
-        level: "H"
-    });
-
-    document.getElementById("qr-image").src = qr.toDataURL("image/png");
-    document.getElementById("qr-name").innerText =
-        document.getElementById("qrTitle").value || "QR コード";
+  document.getElementById("qr-image").src = qr.toDataURL("image/png");
+  document.getElementById("qr-name").innerText =
+    document.getElementById("qrTitle").value || "QR コード";
 }
 
-// ------------------------------
-// QR 反向解析
-// ------------------------------
+// 解析QR
 function decodeQR(){
-    const file = document.getElementById("qrFile").files[0];
-    if (!file) return alert("QR画像を選択してください。");
+  const file=document.getElementById("qrFile").files[0];
+  if(!file) return alert("QR画像を選択してください。");
 
-    const img = new Image();
-    img.onload = () => {
-        const c = document.createElement("canvas");
-        c.width = img.width;
-        c.height = img.height;
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0);
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement("canvas");
+    c.width=img.width; c.height=img.height;
+    const ctx=c.getContext("2d");
+    ctx.drawImage(img,0,0);
 
-        const imgData = ctx.getImageData(0,0,c.width,c.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height);
+    const d=ctx.getImageData(0,0,c.width,c.height);
+    const code=jsQR(d.data,d.width,d.height);
 
-        if(code){
-            let arr = code.data.split(";");
-
-            labels.forEach((_,i)=>{
-                const id="f"+(i+1);
-                document.getElementById(id).value = arr[i] || "";
-            });
-
-            saveAll();
-        }else{
-            alert("QRを解析できませんでした。");
-        }
-    };
-    img.src = URL.createObjectURL(file);
+    if(code){
+      let arr=code.data.split(";");
+      labels.forEach((_,i)=>{
+        const id="f"+(i+1);
+        document.getElementById(id).value = arr[i] || "";
+      });
+      saveAll();
+    } else alert("QRを解析できませんでした。");
+  };
+  img.src=URL.createObjectURL(file);
 }
 </script>
 
-<!-- 操作按钮 -->
-<button class="btn-main" onclick="generateQR()">QR を生成</button>
-<button class="btn-second" onclick="decodeQR()">QR を解析</button>
-<button class="btn-danger" onclick="localStorage.clear();location.reload();">全てリセット</button>
-
-<div id="qrcode">
-    <h3 id="qr-name"></h3>
-    <img id="qr-image" style="width:300px; margin-top:20px;">
-</div>
-
-<input type="file" id="qrFile" accept="image/*" style="margin-top:20px;">
-
-</div>
 </body>
 </html>
