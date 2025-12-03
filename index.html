@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IB-QRko-do v6</title>
+<title>IBーQRコード生成器</title>
 
 <!-- iPhone UI 样式 -->
 <style>
@@ -11,7 +11,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
   margin: 0;
   background: #f2f2f7;
-  padding-bottom: 120px; /* 给底部按钮留空间 */
+  padding-bottom: 140px; /* 给底部按钮留空间 */
 }
 
 /* 标题 */
@@ -21,9 +21,10 @@ h2 {
   margin: 0;
   color: #111;
   font-size: 22px;
+  font-weight: 700;
 }
 
-/* 分组卡片 */
+/* 卡片 */
 .section {
   background: #fff;
   margin: 14px;
@@ -40,18 +41,17 @@ h2 {
   font-weight: 600;
 }
 
-/* 输入网格（双列） */
+/* 输入网格 */
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px 16px;
 }
 
-/* 输入组 */
+/* 输入框 */
 .item label {
   font-size: 14px;
   color: #333;
-  margin-bottom: 4px;
 }
 .item input {
   width: 100%;
@@ -60,10 +60,9 @@ h2 {
   border-radius: 10px;
   background: #fafafa;
   font-size: 15px;
-  outline: none;
 }
 .item input:focus {
-  border: 1px solid #0a84ff;
+  border-color: #0a84ff;
   background: #fff;
 }
 
@@ -76,9 +75,20 @@ h2 {
   font-size: 16px;
   background: #fafafa;
 }
-#qrTitle:focus {
-  border-color: #0a84ff;
+
+/* QR 卡片 */
+.qr-card {
   background: #fff;
+  margin: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  text-align: center;
+}
+#qr-name {
+  font-size: 17px;
+  margin-bottom: 12px;
+  color: #222;
 }
 
 /* 底部按钮栏 */
@@ -94,7 +104,7 @@ h2 {
   gap: 12px;
 }
 
-/* 主按钮（QR 生成） */
+/* 下方按钮风格 */
 .btn-main {
   flex: 1;
   padding: 14px 0;
@@ -105,8 +115,6 @@ h2 {
   font-weight: 600;
   border: none;
 }
-
-/* 辅助按钮（QR 解析） */
 .btn-second {
   flex: 1;
   padding: 14px 0;
@@ -118,31 +126,40 @@ h2 {
   border: none;
 }
 
-/* 清空按钮（放在生成卡片下） */
+/* 清零按钮 */
+.btn-zero {
+  width: 100%;
+  padding: 12px 0;
+  background: #ff9500;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 16px;
+  border: none;
+  margin-top: 14px;
+}
+
+/* CSV 按钮 */
+.csv-btn {
+  width: 100%;
+  padding: 12px 0;
+  background: #34c759;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 16px;
+  border: none;
+  margin-top: 10px;
+}
+
+/* 清空全部按钮 */
 .btn-danger {
   width: 100%;
   padding: 12px 0;
-  margin-top: 16px;
   background: #c62828;
   color: #fff;
   border-radius: 12px;
   font-size: 16px;
   border: none;
-}
-
-/* QR 显示卡片 */
-.qr-card {
-  background: #fff;
-  margin: 14px;
-  padding: 16px;
-  border-radius: 14px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-#qr-name {
-  font-size: 17px;
-  margin-bottom: 12px;
-  color: #222;
+  margin-top: 16px;
 }
 
 /* 更新提示 */
@@ -164,7 +181,7 @@ h2 {
 
 <link rel="manifest" href="manifest.json">
 
-<!-- Service Worker 自动更新 -->
+<!-- 自动更新 -->
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js")
@@ -179,7 +196,6 @@ if ("serviceWorker" in navigator) {
       };
     });
 }
-
 function showUpdateToast(){
   const t=document.getElementById("updateToast");
   t.style.display="block";
@@ -190,10 +206,11 @@ function showUpdateToast(){
 </head>
 <body>
 
-<h2>IB-QRko-do v6（iOS UI）</h2>
+<h2>IBーQRコード生成器</h2>
+
 <div id="updateToast">新しいバージョンを読み込み中…</div>
 
-<!-- QR 名称 -->
+<!-- QR 名称卡片 -->
 <div class="section">
   <label class="section-title">QR 名称</label>
   <input id="qrTitle" placeholder="例：定型0300（2A補正値）">
@@ -217,12 +234,18 @@ function showUpdateToast(){
   <div id="sec-offset" class="grid"></div>
 </div>
 
-<!-- QR 预览 -->
+<!-- QR 显示卡片 -->
 <div class="qr-card">
   <h3 id="qr-name"></h3>
   <img id="qr-image" style="width:260px;">
+  
   <input type="file" id="qrFile" accept="image/*" style="margin-top:14px;">
-  <button class="btn-danger" onclick="localStorage.clear();location.reload();">全てリセット</button>
+
+  <button class="btn-zero" onclick="setAllZero()">全て「0」にする</button>
+  <button class="csv-btn" onclick="exportCSV()">CSV ダウンロード</button>
+  <input type="file" id="csvInput" accept=".csv" style="margin-top:10px;" onchange="importCSV()">
+
+  <button class="btn-danger" onclick="localStorage.clear();location.reload();">全てリセット（名称含む）</button>
 </div>
 
 <!-- 底部按钮 -->
@@ -233,45 +256,46 @@ function showUpdateToast(){
 
 <script>
 // ===============================
-// 字段名称（与你当前版本完全一致）
+// 80 项字段列表（保持你原顺序）
 // ===============================
-const labels = [
+const labels=[
 "1. 定型番号","2. 生産数量","3. シート長さ","4. シート幅","5. シート厚み",
 "6. 長さL","7. 幅B","8. 高さH","9. 糊代","10. 複数(丁付)",
 "11. ハーフ","12. O","13. I（I1）","14. h","15. T",
 "16. Max½L(MaxA)","17. Max½(MaxB)W","18. 予備19","19. 予備20","20. 予備21",
 "21. 予備22","22. 予備23","23. 予備24","24. 予備25","25. 縦断裁数量",
 "26. 横断裁数量 予備","27. 段違い罫線ON/OFF（0→OFF/1→ON）",
-"28. 罫線間隔1","29. 罫線間隔2","30. L1","31. L2",
-"32. L3","33. L4","34. L5","35. L6","36. L7",
-"37. L8","38. L9","39. L10","40. L11","41. L12",
-"42. L13","43. L14","44. L15","45. L16","46. W1",
-"47. W2","48. W3","49. W4","50. W5","51. W6",
-"52. W7","53. W8","54. W9","55. iOffsetHeight","56. iOffsetL1",
-"57. iOffsetL2","58. iOffsetL3","59. iOffsetL4","60. iOffsetL5","61. iOffsetL6",
-"62. iOffsetL7","63. iOffsetL8","64. iOffsetL9","65. iOffsetL10","66. iOffsetL11",
-"67. iOffsetL12","68. iOffsetL13","69. iOffsetL14","70. iOffsetL15","71. iOffsetL16",
-"72. iOffsetW1","73. iOffsetW2","74. iOffsetW3","75. iOffsetW4","76. iOffsetW5",
-"77. iOffsetW6","78. iOffsetW7","79. iOffsetW8","80. iOffsetW9"
+"28. 罫線間隔1","29. 罫線間隔2","30. L1","31. L2","32. L3",
+"33. L4","34. L5","35. L6","36. L7","37. L8",
+"38. L9","39. L10","40. L11","41. L12","42. L13",
+"43. L14","44. L15","45. L16","46. W1","47. W2",
+"48. W3","49. W4","50. W5","51. W6","52. W7",
+"53. W8","54. W9","55. iOffsetHeight","56. iOffsetL1","57. iOffsetL2",
+"58. iOffsetL3","59. iOffsetL4","60. iOffsetL5","61. iOffsetL6","62. iOffsetL7",
+"63. iOffsetL8","64. iOffsetL9","65. iOffsetL10","66. iOffsetL11","67. iOffsetL12",
+"68. iOffsetL13","69. iOffsetL14","70. iOffsetL15","71. iOffsetL16",
+"72. iOffsetW1","73. iOffsetW2","74. iOffsetW3","75. iOffsetW4",
+"76. iOffsetW5","77. iOffsetW6","78. iOffsetW7","79. iOffsetW8","80. iOffsetW9"
 ];
 
-// 三大分组
-const basic_end = 27;
-const dim_end = 27 + 25;
+// 分组范围
+const basic_end=27;
+const dim_end=27+25;
 
-const basicBox = document.getElementById("sec-basic");
-const dimBox = document.getElementById("sec-dim");
-const offsetBox = document.getElementById("sec-offset");
+// 容器
+const basicBox=document.getElementById("sec-basic");
+const dimBox=document.getElementById("sec-dim");
+const offsetBox=document.getElementById("sec-offset");
 
 // 创建输入框
-labels.forEach((label, i) => {
-  const id = "f"+(i+1);
-  const el = document.createElement("div");
-  el.className = "item";
-  el.innerHTML = `<label>${label}</label><input id="${id}" type="text">`;
+labels.forEach((label,i)=>{
+  const id="f"+(i+1);
+  const el=document.createElement("div");
+  el.className="item";
+  el.innerHTML=`<label>${label}</label><input id="${id}" type="text">`;
 
-  if(i < basic_end) basicBox.appendChild(el);
-  else if(i < dim_end) dimBox.appendChild(el);
+  if(i<basic_end) basicBox.appendChild(el);
+  else if(i<dim_end) dimBox.appendChild(el);
   else offsetBox.appendChild(el);
 });
 
@@ -279,13 +303,11 @@ labels.forEach((label, i) => {
 function saveAll(){
   labels.forEach((_,i)=>{
     const id="f"+(i+1);
-    localStorage.setItem(id, document.getElementById(id).value);
+    localStorage.setItem(id,document.getElementById(id).value);
   });
-  localStorage.setItem("qrTitle", document.getElementById("qrTitle").value);
+  localStorage.setItem("qrTitle",document.getElementById("qrTitle").value);
 }
-document.querySelectorAll("input").forEach(inp=>{
-  inp.addEventListener("input", saveAll);
-});
+document.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",saveAll));
 
 // 自动恢复
 function restore(){
@@ -299,7 +321,7 @@ function restore(){
 }
 restore();
 
-// 生成QR
+// 生成 QR
 function generateQR(){
   let data=[];
   labels.forEach((_,i)=>{
@@ -309,18 +331,18 @@ function generateQR(){
     data.push(v);
   });
 
-  let qr = new QRious({
-    value: data.join(";"),
-    size: 400,
-    level: "H"
+  let qr=new QRious({
+    value:data.join(";"),
+    size:400,
+    level:"H"
   });
 
-  document.getElementById("qr-image").src = qr.toDataURL("image/png");
-  document.getElementById("qr-name").innerText =
+  document.getElementById("qr-image").src=qr.toDataURL("image/png");
+  document.getElementById("qr-name").innerText=
     document.getElementById("qrTitle").value || "QR コード";
 }
 
-// 解析QR
+// 解析 QR
 function decodeQR(){
   const file=document.getElementById("qrFile").files[0];
   if(!file) return alert("QR画像を選択してください。");
@@ -339,12 +361,62 @@ function decodeQR(){
       let arr=code.data.split(";");
       labels.forEach((_,i)=>{
         const id="f"+(i+1);
-        document.getElementById(id).value = arr[i] || "";
+        document.getElementById(id).value=arr[i] || "";
       });
       saveAll();
-    } else alert("QRを解析できませんでした。");
+    }else alert("QRを解析できませんでした。");
   };
   img.src=URL.createObjectURL(file);
+}
+
+// 一键清零
+function setAllZero(){
+  labels.forEach((_,i)=>{
+    const id="f"+(i+1);
+    document.getElementById(id).value="0";
+  });
+  saveAll();
+}
+
+// CSV 导出
+function exportCSV(){
+  let data=[];
+  labels.forEach((_,i)=>{
+    const id="f"+(i+1);
+    let v=document.getElementById(id).value.trim();
+    if(v==="") v="0";
+    data.push(v);
+  });
+  let csv=data.join(";");
+  let title=document.getElementById("qrTitle").value || "QR";
+
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=title+"_data.csv";
+  a.click();
+}
+
+// CSV 导入
+function importCSV(){
+  const file=document.getElementById("csvInput").files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result.trim();
+    const arr=text.split(";");
+    if(arr.length<80){
+      alert("CSV の項目数が不足しています（80 必要）");
+      return;
+    }
+    labels.forEach((_,i)=>{
+      const id="f"+(i+1);
+      document.getElementById(id).value=arr[i] || "0";
+    });
+    saveAll();
+  };
+  reader.readAsText(file,"UTF-8");
 }
 </script>
 
