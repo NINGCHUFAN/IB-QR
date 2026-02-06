@@ -1,64 +1,73 @@
-// ===============================
-// IB-QRko-do v5 Service Worker
-// 离线缓存 + 自动更新
-// ===============================
-
-const CACHE_NAME = "ibqr-v5-cache-001";
-
-const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+/* IB-QR PWA Service Worker (v9) */
+const CACHE_NAME = 'ib-qr-v9-' + self.registration.scope;
+const CORE_ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './service-worker.js',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// ------------------------------
-// Install（缓存最新资源）
-// ------------------------------
-self.addEventListener("install", event => {
-  self.skipWaiting(); // 强制立即激活新版 SW
-
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
-  );
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(CORE_ASSETS);
+  })());
 });
 
-// ------------------------------
-// Activate（删除旧缓存 + 立即接管）
-// ------------------------------
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key); // 删除旧版本缓存
-          }
-        })
-      )
-    )
-  );
-
-  return self.clients.claim(); // 新版本立即生效
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => (k.startsWith('ib-qr-') && k !== CACHE_NAME) ? caches.delete(k) : Promise.resolve()));
+    await self.clients.claim();
+  })());
 });
 
-// ------------------------------
-// Fetch（离线优先策略）
-// ------------------------------
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      // 离线时读取缓存
-      return (
-        response ||
-        fetch(event.request).catch(() => {
-          // 特殊情况：没网并访问根路径时
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-        })
-      );
-    })
-  );
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Network-first for HTML, cache-first for others
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  if (req.method !== 'GET') return;
+
+  // Only handle same-origin
+  if (url.origin !== location.origin) return;
+
+  // HTML: network-first
+  if (req.headers.get('accept')?.includes('text/html')) {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(req, fresh.clone());
+        return fresh;
+      } catch (e) {
+        const cached = await caches.match(req);
+        return cached || caches.match('./index.html');
+      }
+    })());
+    return;
+  }
+
+  // Others: cache-first
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+    try {
+      const fresh = await fetch(req);
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(req, fresh.clone());
+      return fresh;
+    } catch (e) {
+      return cached;
+    }
+  })());
 });
