@@ -1,5 +1,5 @@
-/* IB-QR PWA Service Worker (v9) */
-const CACHE_NAME = 'ib-qr-v9-' + self.registration.scope;
+/* IB-QR PWA Service Worker (v10) */
+const CACHE_NAME = 'ib-qr-v10-' + self.registration.scope;
 const CORE_ASSETS = [
   './',
   './index.html',

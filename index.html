@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IB-QRko-do v9</title>
+<title>IB-QRko-do v10</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,7 +34,7 @@ canvas { display:none; }
 </head>
 
 <body>
-<h2>IBーQRコード生成器 <span style="font-size:14px;color:#666;">v9</span></h2>
+<h2>IBーQRコード生成器 <span style="font-size:14px;color:#666;">v10</span></h2>
 
 <div class="container">
 
@@ -49,7 +49,8 @@ canvas { display:none; }
 <button class="btn-second" onclick="downloadQR()">QR画像ダウンロード</button>
 <button class="btn-second" onclick="loadQR()">QR解析（画像読込）</button>
 <button class="btn-second" onclick="saveCSV()">CSV出力</button>
-<button class="btn-danger" onclick="clearAll()">全入力クリア</button>
+<button class="btn-danger" <button class="btn-second" onclick="setAllZero()">全項目を0にする</button>
+      onclick="clearAll()">全入力クリア</button>
 
 <div id="qrcode"></div>
 <canvas id="qr-canvas"></canvas>
@@ -117,6 +118,17 @@ function downloadQR(){
 }
 
 // 全クリア
+function setAllZero(){
+    if(!confirm("全ての項目を0にしますか？")) return;
+    for(let i=0;i<80;i++){
+        const el=document.getElementById("input"+i);
+        if(el){
+            el.value="0";
+        }
+        localStorage.setItem("qr"+i,"0");
+    }
+}
+
 function clearAll(){
     if(!confirm("全て消去しますか？")) return;
     for(let i=0;i<80;i++){
